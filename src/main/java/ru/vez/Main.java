@@ -1,6 +1,8 @@
 package ru.vez;
 
 import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -11,6 +13,7 @@ import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.element.Text;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 
@@ -19,6 +22,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 public class Main {
+
     private static final String SRC_FILE = "/home/osboxes/tmp/page.pdf";
     private static final String DIRECTOR_FILE = "/home/osboxes/tmp/director.txt";
     private static final String MERGED_DIRECTOR_FILE = "/home/osboxes/tmp/merged_director.pdf";
@@ -42,23 +46,40 @@ public class Main {
         Document doc = new Document(pdfDoc);
         doc.setMargins(20,20,20,20);
 
-        Table table = new Table(UnitValue.createPercentArray(16)).useAllAvailableWidth();
+        Table table = new Table(UnitValue.createPercentArray(4)).useAllAvailableWidth();
 
-        Paragraph par = new Paragraph(person.getName())
-            .setFontColor(ColorConstants.BLACK);
+        String string = person.getPosition() + ": " + System.lineSeparator() + person.getName();
+        Cell nameCell = getPreparedCell(string);
 
-        Cell nameCell = new Cell().add(par)
-            .setBorder(new SolidBorder(ColorConstants.BLUE, 2))
-            .setTextAlignment(TextAlignment.CENTER);
-
-        // table.addCell( nameCell );
-        table.addCell( nameCell );
+        table.addCell(nameCell);
 
         doc.add(table);
         doc.close();
     }
 
     // region Private
+
+    private static Cell getPreparedCell(String string) throws IOException {
+
+        PdfFont fontrus = getPdfFont();
+        Text text = new Text(string);
+        text.setFont(fontrus);
+
+        return new Cell().add(
+            new Paragraph(text).setFontSize(10).setFontColor(ColorConstants.BLUE)
+        )
+            .setBorder(new SolidBorder(ColorConstants.BLUE, 2))
+            .setTextAlignment(TextAlignment.CENTER);
+    }
+
+    private static PdfFont getPdfFont() throws IOException {
+
+        return PdfFontFactory.createFont(
+            "/home/osboxes/tmp/freesans.otf",
+            "CP1251",
+            true
+        );
+    }
 
     private static Person readFromFile(String personFile) throws IOException {
 
