@@ -1,48 +1,72 @@
 package ru.vez;
 
-import com.itextpdf.io.image.ImageData;
-import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
-import com.itextpdf.kernel.pdf.annot.PdfStampAnnotation;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.SolidBorder;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.layout.property.UnitValue;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Main {
     private static final String SRC_FILE = "/home/osboxes/tmp/page.pdf";
-    private static final String DEST_FILE = "/home/osboxes/tmp/merged.pdf";
-    private static final String STAMP_IMG = "/home/osboxes/tmp/stamp.png";
+    private static final String DIRECTOR_FILE = "/home/osboxes/tmp/director.txt";
+    private static final String MERGED_DIRECTOR_FILE = "/home/osboxes/tmp/merged_director.pdf";
+    private static final String ENGINEER_FILE = "/home/osboxes/tmp/engineer.txt";
+    private static final String MERGED_ENGINEER_FILE = "/home/osboxes/tmp/merged_engineer.pdf";
 
     public static void main(String[] args) throws Exception {
 
-        manipulatePdf(SRC_FILE, DEST_FILE, STAMP_IMG);
+        Person director = readFromFile(DIRECTOR_FILE);
+        mergeAndSavePdfToFile(SRC_FILE, MERGED_DIRECTOR_FILE, director);
+
+        Person engineer = readFromFile(ENGINEER_FILE);
+        mergeAndSavePdfToFile(SRC_FILE, MERGED_ENGINEER_FILE, engineer);
     }
 
-    public static void manipulatePdf(String src, String dest, String imgSrc) throws Exception {
+
+    public static void mergeAndSavePdfToFile(String src, String dest, Person person) throws Exception {
 
         PdfDocument pdfDoc = new PdfDocument(new PdfReader(src), new PdfWriter(dest));
+        pdfDoc.getCatalog().put(PdfName.Lang, new PdfString("RU"));
+        Document doc = new Document(pdfDoc);
+        doc.setMargins(20,20,20,20);
 
-        ImageData img = ImageDataFactory.create(imgSrc);
-        float width = img.getWidth();
-        float height = img.getHeight();
-        PdfFormXObject xObj = new PdfFormXObject(new Rectangle(width, height));
+        Table table = new Table(UnitValue.createPercentArray(16)).useAllAvailableWidth();
 
-        PdfCanvas canvas = new PdfCanvas(xObj, pdfDoc);
-        canvas.addImageAt(img, 0, 0, false);
+        Paragraph par = new Paragraph(person.getName())
+            .setFontColor(ColorConstants.BLACK);
 
-        Rectangle location = new Rectangle(36, 770 - height, width, height);
-        PdfStampAnnotation stamp = new PdfStampAnnotation(location).setStampName(new PdfName("ITEXT"));
-        stamp.setNormalAppearance(xObj.getPdfObject());
+        Cell nameCell = new Cell().add(par)
+            .setBorder(new SolidBorder(ColorConstants.BLUE, 2))
+            .setTextAlignment(TextAlignment.CENTER);
 
-        // Set to print the annotation when the page is printed
-        stamp.setFlags(PdfAnnotation.PRINT);
-        pdfDoc.getFirstPage().addAnnotation(stamp);
+        // table.addCell( nameCell );
+        table.addCell( nameCell );
 
-        pdfDoc.close();
-        canvas.release();
+        doc.add(table);
+        doc.close();
     }
+
+    // region Private
+
+    private static Person readFromFile(String personFile) throws IOException {
+
+        BufferedReader br = new BufferedReader(new FileReader(personFile));
+        String name = br.readLine();
+        String position = br.readLine();
+        return new Person(name, position);
+    }
+
+    // endregion
 }
